@@ -7,7 +7,6 @@ const urls = [
 let channels = [];
 let activeCat = "All";
 let hls = null;
-let currentChannel = null;
 
 const list = document.getElementById("list");
 const category = document.getElementById("category");
@@ -20,16 +19,14 @@ const searchBtn = document.getElementById("searchBtn");
 const searchBox = document.getElementById("searchBox");
 const searchInput = document.getElementById("searchInput");
 
-// Helper: Create Slug
 function makeSlug(n) { return n.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""); }
 
-// Load M3U Data
-async function loadPlaylists() {
+// Load Playlist
+async function init() {
     const results = await Promise.all(urls.map(u => fetch(u).then(r => r.text()).catch(() => "")));
     results.forEach(parseM3U);
     renderCategory();
     renderList(channels);
-    checkURLParam();
 }
 
 function parseM3U(t) {
@@ -40,9 +37,8 @@ function parseM3U(t) {
             const logo = (l.match(/tvg-logo="(.*?)"/) || [])[1] || "";
             const cat = (l.match(/group-title="(.*?)"/) || [])[1] || "Others";
             const stream = (lines[i + 1] || "").trim();
-            const id = makeSlug(name);
-            if (stream.startsWith("http") && !channels.some(c => c.id === id)) {
-                channels.push({ name, logo, cat, stream, id });
+            if (stream.startsWith("http")) {
+                channels.push({ name, logo, cat, stream, id: makeSlug(name) });
             }
         }
     });
@@ -53,7 +49,7 @@ function renderCategory() {
     category.innerHTML = "";
     cats.forEach(c => {
         const d = document.createElement("div");
-        d.className = "catBtn" + (c === activeCat ? " active" : "");
+        d.className = `catBtn ${c === activeCat ? 'active' : ''}`;
         d.innerText = c;
         d.onclick = () => {
             activeCat = c;
@@ -69,21 +65,18 @@ function renderList(arr) {
     arr.forEach(c => {
         const d = document.createElement("div");
         d.className = "channelItem";
-        d.innerHTML = `<img src="${c.logo}" onerror="this.src='https://via.placeholder.com/65'"><span>${c.name}</span>`;
+        d.innerHTML = `<img src="${c.logo}" onerror="this.src='https://via.placeholder.com/55'"><span>${c.name}</span>`;
         d.onclick = () => playChannel(c);
         list.appendChild(d);
     });
 }
 
 function playChannel(c) {
-    currentChannel = c;
-    left.style.display = "flex";
+    if (hls) hls.destroy();
     backBtn.style.display = "block";
     currentLogo.src = c.logo;
     currentName.innerText = c.name;
-    
-    if (hls) hls.destroy();
-    
+
     if (Hls.isSupported()) {
         hls = new Hls();
         hls.loadSource(c.stream);
@@ -95,7 +88,7 @@ function playChannel(c) {
     }
 }
 
-// Search Logic
+// Search
 searchBtn.onclick = () => {
     searchBox.style.display = searchBox.style.display === "block" ? "none" : "block";
     if (searchBox.style.display === "block") searchInput.focus();
@@ -103,27 +96,18 @@ searchBtn.onclick = () => {
 
 searchInput.onkeyup = () => {
     const q = searchInput.value.toLowerCase();
-    const filtered = channels.filter(c => c.name.toLowerCase().includes(q));
-    renderList(filtered);
+    renderList(channels.filter(c => c.name.toLowerCase().includes(q)));
 };
 
-// Back Button
 backBtn.onclick = () => {
     video.pause();
-    left.style.display = "none";
     backBtn.style.display = "none";
+    if (window.innerWidth < 968) {
+        // মোবাইলে ভিডিও প্লেয়ার হাইড করার লজিক চাইলে এখানে দিতে পারেন
+    }
 };
 
-// Auto-play from URL parameter (?id=channel-name)
-function checkURLParam() {
-    const id = new URLSearchParams(window.location.search).get("id");
-    if (id) {
-        const ch = channels.find(x => x.id === id);
-        if (ch) playChannel(ch);
-    }
-}
-
-// Security & Context Menu
+// Security
 document.addEventListener("contextmenu", e => e.preventDefault());
 
-loadPlaylists();
+init();
