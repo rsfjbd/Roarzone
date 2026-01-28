@@ -1,4 +1,4 @@
-    "Sports": [
+    {"Sports": [
       { "name": "T Sports", "id": "t sports", "logo": "http://tvassets.roarzone.info/images/102.png", "url": "https://edge2.roarzone.info:8444/roarzone/edge2/tsports/index.m3u8?token=6ac54123536d415569c72f1246b787713afc6918-6c52a76759bb2d47368ee73403a83462-1769599276-1769595676" },
       { "name": "Star Sports 1", "id": "star sports 1", "logo": "http://tvassets.roarzone.info/images/25.png", "url": "https://edge2.roarzone.info:8444/roarzone/edge2/star-sports-1/index.m3u8?token=b7aa4ea913e0ab3662674a7a2dd7731e4e602fc1-1d52732b107e313ab3edcf2ebe426bd9-1769599276-1769595676" },
       { "name": "Star Sports 2", "id": "star sports 2", "logo": "http://tvassets.roarzone.info/images/26.png", "url": "https://edge2.roarzone.info:8444/roarzone/edge2/star-sports-2/index.m3u8?token=90817e0d3fc49d2ecbd948b616bd80fa3b39d183-abff109c9ca517f983137ca699cd0723-1769599276-1769595676" },
