@@ -1,6 +1,6 @@
 // Initialize Clappr player
     var player = new Clappr.Player({
-        source: "https://raw.githubusercontent.com/tvbd/m3uplayer/refs/heads/main/m3u/nexgen.m3u",
+        source: "F92YWxIZTO0UOezeus/fet-1/playlist.m3u8",
         parentId: "#player",
         autoPlay: true,
         mute: false,
