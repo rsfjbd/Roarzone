@@ -1,96 +1,157 @@
-  // --- AUTO ROTATE LOGIC ---
-        // This handles full screen orientation
-        player.on('fullscreenchange', function() {
-            if (player.isFullscreen()) {
-                // Try locking to landscape
-                if (screen.orientation && screen.orientation.lock) {
-                    screen.orientation.lock('landscape').catch((e)=>{ /* Silently fail on desktop/unsupported */ });
-                }
+// Initialize Clappr player
+    var player = new Clappr.Player({
+        source: "https://raw.githubusercontent.com/tvbd/m3uplayer/refs/heads/main/m3u/nexgen.m3u",
+        parentId: "#player",
+        autoPlay: true,
+        mute: false,
+        height: '100%',
+        width: '100%',
+        disableVideoTagContextMenu: true,
+    });
+
+    // Function to change channel with retry logic
+    function changeChannel(url, channelCard) {
+        const overlayMessage = document.getElementById('overlay-message');
+        overlayMessage.textContent = '১০ সেকেন্ড অপেক্ষা করুন চ্যানেল টি চালু হচ্ছে......';
+        overlayMessage.style.display = 'flex';
+
+        player.load(url);
+
+        let streamStarted = false;
+        const maxRetryDuration = 60000; // 60 seconds
+        const retryStartTime = Date.now();
+
+        // Remove previous listeners to avoid stacking
+        player.off(Clappr.Events.PLAYER_ERROR);
+        player.off(Clappr.Events.PLAYER_PLAY);
+
+        // On successful play
+        player.once(Clappr.Events.PLAYER_PLAY, function () {
+            streamStarted = true;
+            overlayMessage.style.display = 'none';
+        });
+
+        // On error, retry for 60 seconds
+        player.on(Clappr.Events.PLAYER_ERROR, function (error) {
+            if (streamStarted) return;
+
+            const elapsed = Date.now() - retryStartTime;
+            if (elapsed < maxRetryDuration) {
+                console.warn("Stream error, retrying...", error);
+                setTimeout(() => player.load(url), 2000); // retry every 2s
             } else {
-                // Unlock on exit (Revert to Auto)
-                if (screen.orientation && screen.orientation.unlock) {
-                    screen.orientation.unlock();
+                overlayMessage.textContent = 'Error: Stream not available. Please try another channel.';
+            }
+        });
+
+        // Call backend to notify play attempt
+        const streamName = url.split('/')[3];
+        fetch(`http://100.100.100.100/play-channel/${streamName}`)
+            .then(response => response.json())
+            .then(data => console.log("Play-channel API response:", data))
+            .catch(error => console.error("Error calling play-channel API:", error));
+
+        // Highlight the active channel card
+        document.querySelectorAll('.channel-card').forEach(card => {
+            card.classList.remove('active');
+        });
+        channelCard.classList.add('active');
+
+        // Scroll to selected card
+        channelCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // Scrollable tab setup
+    function setupTabScrolling() {
+        const tabsContainer = document.querySelector('.category-tabs-scroll');
+        const leftButton = document.querySelector('.scroll-button.left');
+        const rightButton = document.querySelector('.scroll-button.right');
+
+        leftButton.addEventListener('click', () => {
+            tabsContainer.scrollBy({ left: -200, behavior: 'smooth' });
+        });
+
+        rightButton.addEventListener('click', () => {
+            tabsContainer.scrollBy({ left: 200, behavior: 'smooth' });
+        });
+
+        tabsContainer.addEventListener('scroll', () => {
+            const scrollLeft = tabsContainer.scrollLeft;
+            const scrollWidth = tabsContainer.scrollWidth;
+            const clientWidth = tabsContainer.clientWidth;
+
+            leftButton.style.display = scrollLeft > 0 ? 'flex' : 'none';
+            rightButton.style.display = scrollLeft < (scrollWidth - clientWidth - 1) ? 'flex' : 'none';
+        });
+
+        tabsContainer.dispatchEvent(new Event('scroll'));
+    }
+
+    // Show channels under selected category
+    function showChannels(categoryName, channels) {
+        const channelsContainer = document.getElementById('channels-container');
+        channelsContainer.innerHTML = '';
+
+        channels.forEach(channel => {
+            const channelCard = document.createElement('div');
+            channelCard.className = 'channel-card';
+            channelCard.onclick = () => changeChannel(channel.url, channelCard);
+
+            channelCard.innerHTML = `
+                <img src="${channel.image}" alt="${channel.channel_name}">
+                <div class="channel-info">
+                    <div class="channel-name">${channel.channel_name}</div>
+                    <div class="channel-category">${categoryName}</div>
+                </div>
+            `;
+
+            channelsContainer.appendChild(channelCard);
+        });
+
+        // Auto-select the first channel
+        if (channels.length > 0) {
+            const firstChannelCard = channelsContainer.querySelector('.channel-card');
+            changeChannel(channels[0].url, firstChannelCard);
+        }
+    }
+
+    // Fetch categories and channels
+    fetch('server.json')
+        .then(response => response.json())
+        .then(data => {
+            const categoryTabs = document.getElementById('category-tabs');
+            let firstCategory = true;
+
+            for (const category in data) {
+                if (data.hasOwnProperty(category)) {
+                    const tab = document.createElement('div');
+                    tab.className = 'category-tab';
+                    if (firstCategory) {
+                        tab.classList.add('active');
+                        firstCategory = false;
+                    }
+                    tab.textContent = category.charAt(0).toUpperCase() + category.slice(1);
+
+                    tab.addEventListener('click', function () {
+                        document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
+                        this.classList.add('active');
+                        showChannels(category, data[category]);
+                    });
+
+                    categoryTabs.appendChild(tab);
                 }
             }
+
+            // Auto-select first category
+            if (Object.keys(data).length > 0) {
+                const firstCategoryKey = Object.keys(data)[0];
+                showChannels(firstCategoryKey, data[firstCategoryKey]);
+            }
+
+            setupTabScrolling();
+        })
+        .catch(error => {
+            console.error('Error fetching playlist:', error);
+            document.getElementById('channels-container').innerHTML =
+                '<div style="padding: 20px; text-align: center; color: #606060;">Error loading channels. Please try again later.</div>';
         });
-
-        player.on('error', function() {
-            const errorDisplay = player.errorDisplay;
-            errorDisplay.el().setAttribute('data-content', '⛔ CHANNEL OFFLINE OR GEOLOCKED');
-            document.querySelector('.vjs-loading-spinner').style.display = 'none';
-        });
-
-        function init() {
-            document.getElementById('noticeText').innerText = db.notice || "WELCOME";
-            if(db.watermark_text) {
-                const wm = document.getElementById('watermark');
-                wm.innerText = db.watermark_text;
-                wm.style.color = db.watermark_color;
-                wm.style.borderColor = db.watermark_color;
-            }
-
-            const cats = new Set(db.channels.map(c => c.group || 'Others'));
-            const menu = document.getElementById('catMenu');
-            Array.from(cats).sort().forEach(c => {
-                const btn = document.createElement('button');
-                btn.className = 'cat-btn'; btn.innerText = c; btn.onclick = () => setCat(c);
-                menu.appendChild(btn);
-            });
-
-            render(db.channels);
-            if(db.channels.length > 0) play(db.channels[0]);
-        }
-
-        function render(list) {
-            const el = document.getElementById('chList'); el.innerHTML = '';
-            if(list.length===0) { el.innerHTML = '<p style="padding:20px;text-align:center;">NO CHANNELS</p>'; return; }
-
-            list.forEach(c => {
-                const div = document.createElement('div');
-                div.className = 'item';
-                
-                const logo = c.logo ? `<img src="${c.logo}" class="c-icon" onerror="this.nextElementSibling.style.display='grid';this.style.display='none'">` : '';
-                const txtIcon = `<div class="c-txt-icon" style="display:${c.logo?'none':'grid'}">${c.icon}</div>`;
-
-                div.innerHTML = `
-                    ${logo} ${txtIcon}
-                    <div class="c-meta" onclick="playChannel('${c.url}', '${c.name.replace(/'/g, "\\'")}', this)">
-                        <div class="c-name">${c.name}</div>
-                        <div class="c-cat">${c.group}</div>
-                    </div>
-                `;
-                el.appendChild(div);
-            });
-        }
-
-        function playChannel(url, name, el) {
-            document.getElementById('chName').innerText = name;
-            let type = url.includes('.mp4') ? 'video/mp4' : 'application/x-mpegURL';
-            player.src({ src: url, type: type });
-            player.play().catch(()=>{});
-
-            // Error Reset
-            player.error(null);
-
-            if(el) {
-                document.querySelectorAll('.item').forEach(i=>i.classList.remove('active'));
-                el.parentElement.classList.add('active');
-            }
-            if(window.innerWidth < 900) {
-                 // Slight scroll to ensure player visibility
-                 document.getElementById('playerTarget').scrollIntoView({behavior:'smooth'});
-            }
-        }
-
-        function play(c) { playChannel(c.url, c.name, document.querySelector('.item')); }
-
-        function setCat(cat) {
-            document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.innerText === cat));
-            render(cat === 'All' ? db.channels : db.channels.filter(c => c.group === cat));
-        }
-
-        function search(t) {
-            render(db.channels.filter(c => c.name.toLowerCase().includes(t.toLowerCase())));
-        }
-
-        init();
