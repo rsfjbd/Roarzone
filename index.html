@@ -1,53 +1,48 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="bn">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ms Online IPTV</title>
-    <script src="//cdn.jsdelivr.net/npm/clappr@latest/dist/clappr.min.js"></script>
-    <link href="style.css" rel="stylesheet" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Biostar TV World</title>
+  <link rel="icon" type="image/png" href="https://thebengalee.com/wp-content/uploads/2025/12/Biostar_TV-removebg-preview-1.webp">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 </head>
 <body>
-    <div class="app-container" >
-    <div id="player-container">
-        <div id="player" style="position: relative;">
-            <div id="overlay-message" style="
-                display: none;
-                position: absolute;
-                top: 0; left: 0;
-                width: 100%; height: 100%;
-                background-color: rgba(0, 0, 0, 0.7);
-                color: white;
-                font-size: 20px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 10;
-                text-align: center; ">
-                ১০ সেকেন্ড অপেক্ষা করুন চ্যানেল টি চালু হচ্ছে...
-            </div>
-        </div>
-    </div>
-    
 
-   
-        <div class="playlist-container">
-            <div class="category-tabs-container">
-                <div class="scroll-button left"></div>
-                <div class="category-tabs-scroll">
-                    <div class="category-tabs" id="category-tabs"></div>
-                </div>
-                <div class="scroll-button right"></div>
-            </div>
-            <div class="channels-container" id="channels-container"></div>
-        </div>
+<header>
+  <div class="headerBtn" id="backBtn" style="display:none;">⟵ Back</div>
+  <div class="title">Biostar TV World</div>
+  <div class="headerBtn" id="searchBtn">🔍</div>
+</header>
+
+<div id="searchBox">
+  <input id="searchInput" placeholder="Search channel...">
+</div>
+
+<div id="main">
+  <div id="left">
+    <div id="videoWrap">
+      <video id="video" playsinline></video>
+      <div id="watermark">
+        <img src="https://thebengalee.com/wp-content/uploads/2025/12/Biostar_TV-removebg-preview-1.webp" alt="Watermark">
+      </div>
     </div>
-    
-    <!-- Copyright Footer 
-    <footer style="text-align: center; margin-top: 30px; padding: 10px; ">
-        <p>&copy; MSTV </p>
-    </footer> -->
-    
-  <script src="app.js"></script>
+
+    <div id="currentInfo">
+      <img id="currentLogo" src="" alt="">
+      <span id="currentName">Select a Channel</span>
+    </div>
+  </div>
+
+  <div id="right">
+    <div id="category"></div>
+    <div id="list"></div>
+  </div>
+</div>
+
+<footer id="footer">© Biostar TV World. All Rights Reserved 2026</footer>
+
+<script src="script.js" defer></script>
 </body>
 </html>
